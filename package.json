@@ -1,0 +1,31 @@
+{
+    "private": true,
+    "name": "gethr-twitch-extension-ebs",
+    "version": "1.0.0",
+    "description": "The serverless backend for the Gethr Twitch Extension.",
+    "main": "ebs.js",
+    "dependencies": {
+        "@awspilot/dynamodb": "^1.2.10",
+        "atob": "^2.1.2",
+        "aws-sdk": "^2.410.0",
+        "body-parser": "^1.18.3",
+        "btoa": "^1.2.1",
+        "ejs": "^2.6.1",
+        "express": "^4.16.3",
+        "jsonwebtoken": "^8.3.0",
+        "lodash": "^4.17.11",
+        "request": "^2.88.0",
+        "request-promise-native": "^1.0.5",
+        "serverless": "^1.38.0",
+        "serverless-dynamodb-local": "0.2.35",
+        "serverless-http": "^1.9.1"
+    },
+    "devDependencies": {
+        "serverless-offline": "^3.33.0"
+    },
+    "nodemonConfig": {
+        "ignore": [
+            "storage/*"
+        ]
+    }
+}

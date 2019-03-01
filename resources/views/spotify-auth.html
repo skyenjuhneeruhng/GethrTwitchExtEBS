@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Gethr Spotify Auth</title>
+
+        <style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            }
+        </style>
+    </head>
+    <body>
+        <h1 id="title">Thanks!</h1>
+        <p id="message">Returning to Twitch Extension...</p>
+        <script>
+            var error = "<%= error %>";
+
+            var message = 'spotify-auth-complete';
+
+            if (error) {
+                document.querySelector('h1').innerHTML = 'Oh no!';
+                document.querySelector('p').innerHTML = error;
+
+                message = 'spotify-auth-error';
+            }
+
+            setTimeout(function () {
+                window.opener.postMessage(message, '*');
+            }, 10000);
+        </script>
+    </body>
+</html>

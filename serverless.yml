@@ -1,0 +1,174 @@
+# Welcome to Serverless!
+#
+# This file is the main config file for your service.
+# It's very minimal at this point and uses default values.
+# You can always add more config options for more control.
+# We've included some commented out config examples here.
+# Just uncomment any of them to get that config option.
+#
+# For full config options, check the docs:
+#    docs.serverless.com
+#
+# Happy Coding!
+
+service: gethr-twitch-extension-ebs
+app: gethr-ebs-dev
+tenant: colbydude
+
+plugins:
+  - serverless-dynamodb-local
+  - serverless-offline
+
+custom:
+  tablePrefix: 'gethr-api-'
+  tableSuffix: '-${self:provider.stage}'
+  dynamodb:
+    start:
+      migrate: true
+
+provider:
+  name: aws
+  runtime: nodejs8.10
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:region, 'us-east-2'}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:DescribeTable
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+        - lambda:InvokeAsync
+        - lambda:InvokeFunction
+      Resource:
+        - "arn:aws:lambda:us-east-2:880233103405:function:fc2-dev-*"
+        - { "Fn::GetAtt": ["SpotifyPlaylistsDynamoDBTable", "Arn"]}
+        - { "Fn::GetAtt": ["SpotifyProfilesDynamoDBTable", "Arn"]}
+        - { "Fn::GetAtt": ["SpotifyTokensDynamoDBTable", "Arn"]}
+        - { "Fn::GetAtt": ["UsersDynamoDBTable", "Arn"]}
+  environment:
+    SLS_DEBUG: true
+    APP_DEBUG: ${file(aws.env.${self:provider.stage}.json):APP_DEBUG}
+    APP_NAME: ${file(aws.env.${self:provider.stage}.json):APP_NAME}
+    APP_STAGE: ${self:provider.stage}
+    APP_URL: ${ssm:/${self:provider.stage}/ebs_app_url:${file(aws.env.${self:provider.stage}.json):APP_URL}}
+    # TWITCH_EXT_CLIENT_ID: ${file(aws.env.${self:provider.stage}.json):TWITCH_EXT_CLIENT_ID}
+    # TWITCH_EXT_OWNER_ID: ${file(aws.env.${self:provider.stage}.json):TWITCH_EXT_OWNER_ID}
+    # TWITCH_EXT_SECRET: ${file(aws.env.${self:provider.stage}.json):TWITCH_EXT_SECRET} # Extract to secrets manager.
+    # SPOTIFY_CLIENT_ID: ${file(aws.env.${self:provider.stage}.json):SPOTIFY_CLIENT_ID}
+    # SPOTIFY_SECRET: ${file(aws.env.${self:provider.stage}.json):SPOTIFY_SECRET} # Extract to secrets manager.
+    TWITCH_EXT_CLIENT_ID: ${ssm:/${self:provider.stage}/twitch_client_id}
+    TWITCH_EXT_SECRET: ${ssm:/${self:provider.stage}/twitch_client_secret}
+    SPOTIFY_CLIENT_ID: ${ssm:/${self:provider.stage}/spotify_client_id}
+    SPOTIFY_SECRET: ${ssm:/${self:provider.stage}/spotify_client_secret}
+
+    LASTFM_API_KEY: ${ssm:/${self:provider.stage}/lastfm_api_key}
+    LASTFM_API_SECRET: ${ssm:/${self:provider.stage}/lastfm_api_secret}
+
+functions:
+  app:
+    handler: aws.handler
+    events:
+      - http: ANY /
+      - http: 'ANY {proxy+}'
+
+resources:
+  Resources:
+    # ClickThroughsDynamoDBTable:
+    #   Type: 'AWS::DynamoDB::Table'
+    #   Properties:
+    #     AttributeDefinitions:
+    #       -
+    #         AttributeName: twitch_channel_id
+    #         AttributeType: S
+    #     KeySchema:
+    #       -
+    #         AttributeName: twitch_channel_id
+    #         KeyType: HASH
+    #     ProvisionedThroughput:
+    #       ReadCapacityUnits: 5
+    #       WriteCapacityUnits: 5
+    #     TableName: '${self:custom.tablePrefix}click-throughs${self:custom.tableSuffix}'
+    SpotifyPlaylistsDynamoDBTable:
+      Type: 'AWS::DynamoDB::Table'
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: twitch_channel_id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: twitch_channel_id
+            KeyType: HASH
+          - AttributeName: id
+            KeyType: RANGE
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
+        GlobalSecondaryIndexes:
+          - IndexName: twitch_channel_id-index
+            KeySchema:
+              - AttributeName: twitch_channel_id
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+            ProvisionedThroughput:
+              ReadCapacityUnits: 5
+              WriteCapacityUnits: 5
+        TableName: '${self:custom.tablePrefix}spotify-playlists${self:custom.tableSuffix}'
+    SpotifyProfilesDynamoDBTable:
+      Type: 'AWS::DynamoDB::Table'
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: twitch_channel_id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: twitch_channel_id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
+        TableName: '${self:custom.tablePrefix}spotify-profiles${self:custom.tableSuffix}'
+    SpotifyTokensDynamoDBTable:
+      Type: 'AWS::DynamoDB::Table'
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: twitch_channel_id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: twitch_channel_id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
+        TableName: '${self:custom.tablePrefix}spotify-tokens${self:custom.tableSuffix}'
+    UsersDynamoDBTable:
+      Type: 'AWS::DynamoDB::Table'
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: twitch_channel_id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: twitch_channel_id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
+        TableName: '${self:custom.tablePrefix}users${self:custom.tableSuffix}'
+    LastFMDynamoDBTable:
+      Type: 'AWS::DynamoDB::Table'
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: twitch_channel_id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: twitch_channel_id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
+        TableName: '${self:custom.tablePrefix}lastfm${self:custom.tableSuffix}'
+
